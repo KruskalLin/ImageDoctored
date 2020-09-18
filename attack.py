@@ -56,10 +56,12 @@ else:
 
 cnn.load_state_dict(torch.load('pretrained/cnn.pt'))
 cnn.train()
-for i, (inputs, labels) in enumerate(train_loader):
+
+for index, (inputs, labels) in enumerate(train_loader):
     # get json file
-    if i >= 20:
-        break
+    if index < 20:
+        continue
+    i = index - 20
     configs = json.load(open('configs/' + img_fnames[i].split('.')[0][1:] + '.json', 'r'))
 
     x = inputs.clone()
@@ -74,6 +76,8 @@ for i, (inputs, labels) in enumerate(train_loader):
 
     for config in configs:
         point = config['point']
+        if point[1] + 128 > inputs.size(2) or point[0] + 128 > inputs.size(3):
+            continue
         x_adv, h_adv, h = fgsm(cnn, nn.CrossEntropyLoss(), inputs[:, :, point[1]:point[1] + 128, point[0]:point[0] + 128], labels)
         x[:, :, point[1]:point[1] + 128, point[0]:point[0] + 128] = x_adv
 
