@@ -10,7 +10,21 @@ image_origin_dir = 'class'
 image_classes = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
 
 
+def source_images():
+    if not os.path.exists('original_images'):
+        os.makedirs('original_images')
+    for c in image_classes:
+        imgs = os.listdir(image_origin_dir + '/' + c + '/')
+        for img_name in imgs:
+            img = np.array(Image.open(image_origin_dir + '/' + c + '/' + img_name))
+            Image.fromarray(img).save('original_images/' + img_name[1:])
+
+
 def generate_configs():
+    if not os.path.exists('bounding_detect'):
+        os.makedirs('bounding_detect')
+    if not os.path.exists('configs'):
+        os.makedirs('configs')
     areas = os.listdir(image_boxing_dir)
     for area in areas:
         img = np.array(Image.open(image_boxing_dir + '/' + area))
@@ -155,4 +169,44 @@ def generate_slicing():
             Image.fromarray(img).save('dataset_slicing/images/' + c + '/' + img_name)
             Image.fromarray(mask).save('dataset_slicing/masks/' + c + '/' + img_name)
 
-generate_slicing()
+
+def generate_slicing_nocategory():
+    imgs = os.listdir('original_images')
+    for i, img_name in enumerate(imgs):
+        img = np.array(Image.open('original_images/' + img_name))
+        mask = np.ones((img.shape[0], img.shape[1]), dtype=np.uint8) * 255
+        configs = json.load(open('configs/' + img_name.split('.')[0] + '.json', 'r'))
+        masks_num = random.randint(1, 10)
+        rand = 0
+        while rand == i:
+            rand = random.randint(0, len(imgs) - 1)
+        img_ano = np.array(Image.open('original_images/' + imgs[rand]))
+        for config in configs:
+            for _ in range(masks_num):
+                point = config['point']
+                h = config['h']
+                w = config['w']
+                rand_y = random.randint(0, h - 1)
+                rand_x = random.randint(0, w - 1)
+                ori_y = point[1] + rand_y
+                ori_x = point[0] + rand_x
+                rand_h = random.randint(1, h - rand_y)
+                rand_w = random.randint(1, w - rand_x)
+                if img_ano.shape[0] - rand_h < 0 or img_ano.shape[1] - rand_w < 0:
+                    continue
+                copy_y = random.randint(0, img_ano.shape[0] - rand_h)
+                copy_x = random.randint(0, img_ano.shape[1] - rand_w)
+                img[ori_y:ori_y + rand_h, ori_x:ori_x + rand_w, :] = img_ano[copy_y:copy_y + rand_h,
+                                                                     copy_x:copy_x + rand_w, :]
+                mask[ori_y:ori_y + rand_h, ori_x:ori_x + rand_w] = 0
+        if not os.path.exists('dataset_slicing_all'):
+            os.makedirs('dataset_slicing_all')
+        if not os.path.exists('dataset_slicing_all/images'):
+            os.makedirs('dataset_slicing_all/images')
+        if not os.path.exists('dataset_slicing_all/masks'):
+            os.makedirs('dataset_slicing_all/masks')
+        Image.fromarray(img).save('dataset_slicing_all/images/' + img_name)
+        Image.fromarray(mask).save('dataset_slicing_all/masks/' + img_name)
+
+
+generate_slicing_nocategory()
