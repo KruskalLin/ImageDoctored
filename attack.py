@@ -1,12 +1,15 @@
+import json
+import numpy as np
+
 import torch
 import torchvision.transforms as transforms
 from torch.autograd import Variable
 import torch.nn as nn
-import torch.nn.functional as F
+from PIL import Image
 from torchvision import datasets
 import torch.utils.data
 from cnn import CNN
-
+import os
 
 def fgsm(net, criterion, x, y, targeted=False, eps=0.03, x_val_min=-1, x_val_max=1):
     x_adv = Variable(x.data, requires_grad=True)
@@ -34,6 +37,9 @@ def fgsm(net, criterion, x, y, targeted=False, eps=0.03, x_val_min=-1, x_val_max
 
 
 DATA_DIR = 'testing'
+img_fnames = os.listdir(DATA_DIR + '/authentic')
+img_fnames.sort()
+
 transform = transforms.Compose([transforms.ToTensor()])
 
 data = datasets.ImageFolder(root=DATA_DIR, transform=transform)
@@ -51,6 +57,12 @@ else:
 cnn.load_state_dict(torch.load('pretrained/cnn.pt'))
 cnn.train()
 for i, (inputs, labels) in enumerate(train_loader):
+    # get json file
+    if i >= 20:
+        break
+    configs = json.load(open('configs/' + img_fnames[i].split('.')[0][1:] + '.json', 'r'))
+
+    x = inputs.clone()
     # get the inputs
     if torch.cuda.is_available():
         inputs = Variable(inputs.cuda())
@@ -58,6 +70,12 @@ for i, (inputs, labels) in enumerate(train_loader):
     else:
         inputs = Variable(inputs)
         labels = Variable(labels)
-    inputs = F.unfold(inputs, (128, 128), stride=256).permute(2, 0, 1).reshape(-1, 3, 128, 128) # window
-    labels = labels.repeat(inputs.size(0))
-    fgsm(cnn, nn.CrossEntropyLoss(), inputs, labels)
+
+
+    for config in configs:
+        point = config['point']
+        x_adv, h_adv, h = fgsm(cnn, nn.CrossEntropyLoss(), inputs[:, :, point[1]:point[1] + 128, point[0]:point[0] + 128], labels)
+        x[:, :, point[1]:point[1] + 128, point[0]:point[0] + 128] = x_adv
+
+    Image.fromarray((x[0, :].detach().numpy().transpose((1, 2, 0)) * 255).astype(np.uint8))\
+        .save('images/' + img_fnames[i], quality=98, subsampling=0)
