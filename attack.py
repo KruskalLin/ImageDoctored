@@ -59,9 +59,9 @@ cnn.train()
 
 for index, (inputs, labels) in enumerate(train_loader):
     # get json file
-    if index < 20:
+    if index < len(img_fnames):
         continue
-    i = index - 20
+    i = index - len(img_fnames)
     configs = json.load(open('configs/' + img_fnames[i].split('.')[0][1:] + '.json', 'r'))
 
     x = inputs.clone()
