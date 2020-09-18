@@ -51,7 +51,8 @@ python eval.py
 
 attack
 
-```python
+```shell
+mkdir images
 python attack.py
 ```
 
