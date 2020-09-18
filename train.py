@@ -9,6 +9,7 @@ from patch_extractor import PatchExtractor
 #                     patches_per_image=2, stride=32, rotations=4, mode='rot')
 # pe.extract_patches()
 
+
 torch.manual_seed(0)
 DATA_DIR = "patches_with_rot"
 transform = transforms.Compose([transforms.ToTensor()])
