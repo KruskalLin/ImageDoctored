@@ -4,6 +4,8 @@ from PIL import Image
 import cv2
 import json
 import random
+from skimage import util
+
 
 image_boxing_dir = 'area'
 image_origin_dir = 'class'
@@ -52,6 +54,28 @@ def generate_configs():
         json.dump(data, open('configs/' + area.split('.')[0] + '.json', 'w'))
 
 
+def generate_noise():
+    for c in image_classes:
+        imgs = os.listdir(image_origin_dir + '/' + c + '/')
+        for img_name in imgs:
+            img_num = img_name.split('.')[0][1:]
+            img = np.array(Image.open(image_origin_dir + '/' + c + '/' + img_name))
+            configs = json.load(open('configs/' + img_num + '.json', 'r'))
+            for config in configs:
+                point = config['point']
+                h = config['h']
+                w = config['w']
+                ori_y = point[1]
+                ori_x = point[0]
+                img[ori_y:ori_y + h, ori_x:ori_x + w, :] = util.random_noise(img[ori_y:ori_y + h, ori_x:ori_x + w, :], mode='pepper')
+            if not os.path.exists('dataset_noise'):
+                os.makedirs('dataset_noise')
+            if not os.path.exists('dataset_noise/images'):
+                os.makedirs('dataset_noise/images')
+            if not os.path.exists('dataset_noise/images/' + c):
+                os.makedirs('dataset_noise/images/' + c)
+            Image.fromarray(img).save('dataset_noise/images/' + c + '/' + img_name, quality=99, subsampling=0)
+
 def generate_removal():
     for c in image_classes:
         imgs = os.listdir(image_origin_dir + '/' + c + '/')
@@ -60,7 +84,7 @@ def generate_removal():
             img = np.array(Image.open(image_origin_dir + '/' + c + '/' + img_name))
             mask = np.ones((img.shape[0], img.shape[1]), dtype=np.uint8) * 255
             configs = json.load(open('configs/' + img_num + '.json', 'r'))
-            masks_num = random.randint(1, 5)
+            masks_num = random.randint(1, 20)
             for config in configs:
                 for _ in range(masks_num):
                     point = config['point']
@@ -84,8 +108,41 @@ def generate_removal():
                 os.makedirs('dataset_removal/images/' + c)
             if not os.path.exists('dataset_removal/masks/' + c):
                 os.makedirs('dataset_removal/masks/' + c)
-            Image.fromarray(img).save('dataset_removal/images/' + c + '/' + img_name)
+            Image.fromarray(img).save('dataset_removal/images/' + c + '/' + img_name, quality=99, subsampling=0)
             Image.fromarray(mask).save('dataset_removal/masks/' + c + '/' + img_name)
+
+
+def generate_padding_removal():
+    for c in image_classes:
+        imgs = os.listdir(image_origin_dir + '/' + c + '/')
+        for img_name in imgs:
+            img_num = img_name.split('.')[0][1:]
+            img = np.array(Image.open(image_origin_dir + '/' + c + '/' + img_name))
+            mask = np.ones((img.shape[0], img.shape[1]), dtype=np.uint8) * 255
+            configs = json.load(open('configs/' + img_num + '.json', 'r'))
+            for config in configs:
+                point = config['point']
+                h = config['h']
+                w = config['w']
+                pad_h = round(0.1 * h)
+                pad_w = round(0.1 * w)
+                ori_y = point[1] + pad_h
+                ori_x = point[0] + pad_w
+                img[ori_y:ori_y + h - 2 * pad_h, ori_x:ori_x + w - 2 * pad_w, :] = 0
+                mask[ori_y:ori_y + h - 2 * pad_h, ori_x:ori_x + w - 2 * pad_w] = 0
+            if not os.path.exists('dataset_removal'):
+                os.makedirs('dataset_removal')
+            if not os.path.exists('dataset_removal/images'):
+                os.makedirs('dataset_removal/images')
+            if not os.path.exists('dataset_removal/masks'):
+                os.makedirs('dataset_removal/masks')
+            if not os.path.exists('dataset_removal/images/' + c):
+                os.makedirs('dataset_removal/images/' + c)
+            if not os.path.exists('dataset_removal/masks/' + c):
+                os.makedirs('dataset_removal/masks/' + c)
+            Image.fromarray(img).save('dataset_removal/images/' + c + '/' + img_name, quality=99, subsampling=0)
+            Image.fromarray(mask).save('dataset_removal/masks/' + c + '/' + img_name)
+
 
 
 def generate_copymove():
@@ -209,4 +266,4 @@ def generate_slicing_nocategory():
         Image.fromarray(mask).save('dataset_slicing_all/masks/' + img_name)
 
 
-generate_slicing_nocategory()
+generate_padding_removal()

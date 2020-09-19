@@ -82,4 +82,4 @@ for index, (inputs, labels) in enumerate(train_loader):
         x[:, :, point[1]:point[1] + 128, point[0]:point[0] + 128] = x_adv
 
     Image.fromarray((x[0, :].detach().numpy().transpose((1, 2, 0)) * 255).astype(np.uint8))\
-        .save('images/' + img_fnames[i], quality=98, subsampling=0)
+        .save('images/' + img_fnames[i], quality=97, subsampling=0)
