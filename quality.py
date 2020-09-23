@@ -13,7 +13,7 @@ from skimage.metrics import *
 
 
 aut = 'testing/authentic'
-doc = 'images'
+doc = 'testing/doctored'
 config_dir = 'configs'
 temp = 'resave_images'
 
@@ -75,4 +75,3 @@ for aut_img in auts:
         print('pca')
         print((output != least_index).sum() / output.size)
 
-    break

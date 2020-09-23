@@ -5,7 +5,9 @@ import cv2
 import json
 import random
 from skimage import util
+from skimage import transform
 
+import cv2
 
 image_boxing_dir = 'area'
 image_origin_dir = 'class'
@@ -124,8 +126,8 @@ def generate_padding_removal():
                 point = config['point']
                 h = config['h']
                 w = config['w']
-                pad_h = round(0.1 * h)
-                pad_w = round(0.1 * w)
+                pad_h = round(0.2 * h)
+                pad_w = round(0.2 * w)
                 ori_y = point[1] + pad_h
                 ori_x = point[0] + pad_w
                 img[ori_y:ori_y + h - 2 * pad_h, ori_x:ori_x + w - 2 * pad_w, :] = 0
@@ -140,10 +142,79 @@ def generate_padding_removal():
                 os.makedirs('dataset_removal/images/' + c)
             if not os.path.exists('dataset_removal/masks/' + c):
                 os.makedirs('dataset_removal/masks/' + c)
-            Image.fromarray(img).save('dataset_removal/images/' + c + '/' + img_name, quality=99, subsampling=0)
+            Image.fromarray(img).save('dataset_removal/images/' + c + '/' + img_name, 'JPEG', quality=100, subsampling=0)
             Image.fromarray(mask).save('dataset_removal/masks/' + c + '/' + img_name)
 
 
+
+def generate_padding_scaling():
+    for c in image_classes:
+        imgs = os.listdir(image_origin_dir + '/' + c + '/')
+        for img_name in imgs:
+            img_num = img_name.split('.')[0][1:]
+            img = np.array(Image.open(image_origin_dir + '/' + c + '/' + img_name))
+            mask = np.ones((img.shape[0], img.shape[1]), dtype=np.uint8) * 255
+            configs = json.load(open('configs/' + img_num + '.json', 'r'))
+            for config in configs:
+                point = config['point']
+                h = config['h']
+                w = config['w']
+                pad_h = round(0.3 * h)
+                pad_w = round(0.3 * w)
+                ori_y = point[1] + pad_h
+                ori_x = point[0] + pad_w
+                img[ori_y:ori_y + h - 2 * pad_h, ori_x:ori_x + w - 2 * pad_w, :] = img[ori_y:ori_y + h - 2 * pad_h, ori_x:ori_x + w - 2 * pad_w, :].max() - img[ori_y:ori_y + h - 2 * pad_h, ori_x:ori_x + w - 2 * pad_w, :]
+                mask[ori_y:ori_y + h - 2 * pad_h, ori_x:ori_x + w - 2 * pad_w] = 0
+            if not os.path.exists('dataset_removal'):
+                os.makedirs('dataset_removal')
+            if not os.path.exists('dataset_removal/images'):
+                os.makedirs('dataset_removal/images')
+            if not os.path.exists('dataset_removal/masks'):
+                os.makedirs('dataset_removal/masks')
+            if not os.path.exists('dataset_removal/images/' + c):
+                os.makedirs('dataset_removal/images/' + c)
+            if not os.path.exists('dataset_removal/masks/' + c):
+                os.makedirs('dataset_removal/masks/' + c)
+            Image.fromarray(img).save('dataset_removal/images/' + c + '/' + img_name, 'JPEG', quality=100, subsampling=0)
+            Image.fromarray(mask).save('dataset_removal/masks/' + c + '/' + img_name)
+
+
+
+def generate_scattering():
+    for c in image_classes:
+        imgs = os.listdir(image_origin_dir + '/' + c + '/')
+        for img_name in imgs:
+            img_num = img_name.split('.')[0][1:]
+            img = np.array(Image.open(image_origin_dir + '/' + c + '/' + img_name))
+            mask = np.ones((img.shape[0], img.shape[1]), dtype=np.uint8) * 255
+            configs = json.load(open('configs/' + img_num + '.json', 'r'))
+            for config in configs:
+                point = config['point']
+                h = config['h']
+                w = config['w']
+                ori_y = point[1]
+                ori_x = point[0]
+                area = int(0.16 * h * w)
+                Y = np.random.normal(h / 2, h / 15, area)
+                X = np.random.normal(w / 2, w / 15, area)
+                for y, x in zip(Y, X):
+                    y = np.clip(y, 0.3 * h, 0.7 * h).astype(np.int)
+                    x = np.clip(x, 0.3 * w, 0.7 * w).astype(np.int)
+                    if mask[ori_y + y, ori_x + x] != 0:
+                        img[ori_y + y, ori_x + x, :] = 255 - img[ori_y + y, ori_x + x, :]
+                        mask[ori_y + y, ori_x + x] = 0
+            if not os.path.exists('dataset_removal'):
+                os.makedirs('dataset_removal')
+            if not os.path.exists('dataset_removal/images'):
+                os.makedirs('dataset_removal/images')
+            if not os.path.exists('dataset_removal/masks'):
+                os.makedirs('dataset_removal/masks')
+            if not os.path.exists('dataset_removal/images/' + c):
+                os.makedirs('dataset_removal/images/' + c)
+            if not os.path.exists('dataset_removal/masks/' + c):
+                os.makedirs('dataset_removal/masks/' + c)
+            Image.fromarray(img).save('dataset_removal/images/' + c + '/' + img_name, 'JPEG', quality=100, subsampling=0)
+            Image.fromarray(mask).save('dataset_removal/masks/' + c + '/' + img_name)
 
 def generate_copymove():
     for c in image_classes:
@@ -266,4 +337,75 @@ def generate_slicing_nocategory():
         Image.fromarray(mask).save('dataset_slicing_all/masks/' + img_name)
 
 
-generate_padding_removal()
+def generate_moving():
+    for c in image_classes:
+        imgs = os.listdir(image_origin_dir + '/' + c + '/')
+        for img_name in imgs:
+            img_num = img_name.split('.')[0][1:]
+            img = np.array(Image.open(image_origin_dir + '/' + c + '/' + img_name))
+            mask = np.ones((img.shape[0], img.shape[1]), dtype=np.uint8) * 255
+            configs = json.load(open('configs/' + img_num + '.json', 'r'))
+            for config in configs:
+                point = config['point']
+                h = config['h']
+                w = config['w']
+                ori_y = point[1]
+                ori_x = point[0]
+                if ori_y - 8 > 0 and ori_x - 8 > 0:
+                    img[ori_y - 8:ori_y - 8 + h, ori_x - 8:ori_x - 8 + w, :] = img[ori_y:ori_y + h, ori_x:ori_x + w, :]
+                    mask[ori_y - 8:ori_y - 8 + h, ori_x - 8:ori_x - 8 + w] = 0
+            if not os.path.exists('dataset_copymove'):
+                os.makedirs('dataset_copymove')
+            if not os.path.exists('dataset_copymove/images'):
+                os.makedirs('dataset_copymove/images')
+            if not os.path.exists('dataset_copymove/masks'):
+                os.makedirs('dataset_copymove/masks')
+            if not os.path.exists('dataset_copymove/images/' + c):
+                os.makedirs('dataset_copymove/images/' + c)
+            if not os.path.exists('dataset_copymove/masks/' + c):
+                os.makedirs('dataset_copymove/masks/' + c)
+            Image.fromarray(img).save('dataset_copymove/images/' + c + '/' + img_name, quality=100, subsampling=0)
+            Image.fromarray(mask).save('dataset_copymove/masks/' + c + '/' + img_name)
+
+
+def generate_moving():
+    for c in image_classes:
+        imgs = os.listdir(image_origin_dir + '/' + c + '/')
+        for img_name in imgs:
+            img_num = img_name.split('.')[0][1:]
+            img = np.array(Image.open(image_origin_dir + '/' + c + '/' + img_name))
+            mask = np.ones((img.shape[0], img.shape[1]), dtype=np.uint8) * 255
+            configs = json.load(open('configs/' + img_num + '.json', 'r'))
+            for config in configs:
+                point = config['point']
+                h = config['h']
+                w = config['w']
+                ori_y = point[1]
+                ori_x = point[0]
+                if ori_y - 8 > 0 and ori_x - 8 > 0:
+                    img[ori_y - 8:ori_y - 8 + h, ori_x - 8:ori_x - 8 + w, :] = np.fliplr(img[ori_y:ori_y + h, ori_x:ori_x + w, :])
+                    mask[ori_y - 8:ori_y - 8 + h, ori_x - 8:ori_x - 8 + w] = 0
+            if not os.path.exists('dataset_copymove'):
+                os.makedirs('dataset_copymove')
+            if not os.path.exists('dataset_copymove/images'):
+                os.makedirs('dataset_copymove/images')
+            if not os.path.exists('dataset_copymove/masks'):
+                os.makedirs('dataset_copymove/masks')
+            if not os.path.exists('dataset_copymove/images/' + c):
+                os.makedirs('dataset_copymove/images/' + c)
+            if not os.path.exists('dataset_copymove/masks/' + c):
+                os.makedirs('dataset_copymove/masks/' + c)
+            Image.fromarray(img).save('dataset_copymove/images/' + c + '/' + img_name, quality=100, subsampling=0)
+            Image.fromarray(mask).save('dataset_copymove/masks/' + c + '/' + img_name)
+
+
+def move_dir():
+    dir = 'dataset_copymove'
+    images = ['a0001', 'a0102', 'b0108', 'b0109', 'c0142', 'c0147', 'd0060', 'd0075', 'e0115', 'e0117', 'f0008', 'f0022',
+              'g0011', 'g0101', 'h0166', 'h0171', 'i0094', 'i0183', 'j0093', 'j0192']
+    for img in images:
+        Image.open(dir + '/images/' + img[0] + '/' + img + '.jpg').save('images/' + img + '.jpg', quality=100, subsampling=0)
+
+
+generate_moving()
+move_dir()
