@@ -382,9 +382,9 @@ def generate_moving():
                 w = config['w']
                 ori_y = point[1]
                 ori_x = point[0]
-                if ori_y - 8 > 0 and ori_x - 8 > 0:
-                    img[ori_y - 8:ori_y - 8 + h, ori_x - 8:ori_x - 8 + w, :] = np.fliplr(img[ori_y:ori_y + h, ori_x:ori_x + w, :])
-                    mask[ori_y - 8:ori_y - 8 + h, ori_x - 8:ori_x - 8 + w] = 0
+                if ori_y + h < img.shape[0] and ori_x + 8 + w < img.shape[1]:
+                    img[ori_y:ori_y + h, ori_x + 8:ori_x + 8 + w, :] = img[ori_y:ori_y + h, ori_x:ori_x + w, :]
+                    mask[ori_y:ori_y + h, ori_x + 8:ori_x + 8 + w] = 0
             if not os.path.exists('dataset_copymove'):
                 os.makedirs('dataset_copymove')
             if not os.path.exists('dataset_copymove/images'):
@@ -404,7 +404,7 @@ def move_dir():
     images = ['a0001', 'a0102', 'b0108', 'b0109', 'c0142', 'c0147', 'd0060', 'd0075', 'e0115', 'e0117', 'f0008', 'f0022',
               'g0011', 'g0101', 'h0166', 'h0171', 'i0094', 'i0183', 'j0093', 'j0192']
     for img in images:
-        Image.open(dir + '/images/' + img[0] + '/' + img + '.jpg').save('images/' + img + '.jpg', quality=100, subsampling=0)
+        Image.open(dir + '/images/' + img[0] + '/' + img + '.jpg').save('images/' + img + '.jpg', 'JPEG', quality=100, subsampling=0)
 
 
 generate_moving()
