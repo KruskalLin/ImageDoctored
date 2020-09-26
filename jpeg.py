@@ -17,9 +17,9 @@ def downsampling_420(image):
     #   y:  batch x height x width
     #   cb: batch x height/2 x width/2
     #   cr: batch x height/2 x width/2
-    y, cb, cr = torch.split(image, 3, dim=1)
-    cb = F.avg_pool2d(cb, kernel_size=2, stride=2, padding=(1, 0, 1, 0))
-    cr = F.avg_pool2d(cr, kernel_size=2, stride=2, padding=(1, 0, 1, 0))
+    y, cb, cr = torch.split(image, 1, dim=1)
+    cb = F.avg_pool2d(cb, kernel_size=2, stride=2)
+    cr = F.avg_pool2d(cr, kernel_size=2, stride=2)
     return y, cb, cr
 
 
@@ -42,11 +42,13 @@ def dct_8x8(image):
     for x, y, u, v in itertools.product(range(8), repeat=4):
         tensor[x, y, u, v] = np.cos((2 * x + 1) * u * np.pi / 16) * np.cos(
             (2 * y + 1) * v * np.pi / 16)
-    alpha = np.array([1. / np.sqrt(2)] + [1] * 7)
-    scale = np.outer(alpha, alpha) * 0.25
     tensor = torch.from_numpy(tensor)
 
-    image = image - 128
+    alpha = np.array([1. / np.sqrt(2)] + [1] * 7, dtype=np.float32)
+    scale = np.outer(alpha, alpha) * 0.25
+    scale = torch.from_numpy(scale)
+
+    image = image - 128.
     result = scale * torch.tensordot(image, tensor, dims=2).reshape(image.size())
     return result
 
@@ -94,8 +96,10 @@ def idct_8x8(image):
             (2 * v + 1) * y * np.pi / 16)
     tensor = torch.from_numpy(tensor)
 
-    alpha = np.array([1. / np.sqrt(2)] + [1] * 7)
+    alpha = np.array([1. / np.sqrt(2)] + [1] * 7, dtype=np.float32)
     alpha = np.outer(alpha, alpha)
+    alpha = torch.from_numpy(alpha)
+
     image = image * alpha
     result = 0.25 * torch.tensordot(image, tensor, dims=2).reshape(image.size()) + 128
     return result
@@ -173,8 +177,9 @@ def jpeg_compress_decompress(image, downsample_c=True, rounding=diff_round, fact
     if downsample_c:
         y, cb, cr = downsampling_420(image)
     else:
-        y, cb, cr = torch.split(image, 3, dim=1)
+        y, cb, cr = torch.split(image, 1, dim=1)
     components = {'y': y, 'cb': cb, 'cr': cr}
+
     for k in components.keys():
         comp = components[k]
         comp = image_to_patches(comp)
@@ -189,7 +194,7 @@ def jpeg_compress_decompress(image, downsample_c=True, rounding=diff_round, fact
         comp = idct_8x8(comp)
         if k in ('cb', 'cr'):
             if downsample_c:
-                comp = patches_to_image(comp, h / 2, w / 2)
+                comp = patches_to_image(comp, h // 2, w // 2)
             else:
                 comp = patches_to_image(comp, h, w)
         else:
@@ -215,3 +220,5 @@ def jpeg_compress_decompress(image, downsample_c=True, rounding=diff_round, fact
     #    image = 255 * (image - min_value) / value_range
     image = torch.min(torch.tensor(255.), torch.max(torch.tensor(0.), image))
     return image
+
+print(jpeg_compress_decompress(torch.ones((1, 3, 16, 16), dtype=torch.float32) * 255.))
