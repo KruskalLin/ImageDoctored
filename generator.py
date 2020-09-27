@@ -401,11 +401,10 @@ def generate_moving():
 
 def move_dir():
     dir = 'dataset_copymove'
-    images = ['a0001', 'a0102', 'b0108', 'b0109', 'c0142', 'c0147', 'd0060', 'd0075', 'e0115', 'e0117', 'f0008', 'f0022',
-              'g0011', 'g0101', 'h0166', 'h0171', 'i0094', 'i0183', 'j0093', 'j0192']
+    images = ['a0001', 'a0102', 'b0103', 'b0105', 'c0015', 'c0141', 'd0075', 'd0080', 'e0068', 'e0128', 'f0136', 'f0144',
+              'g0039', 'g0156', 'h0032', 'h0174', 'i0005', 'i0092', 'j0004', 'j0087']
     for img in images:
         Image.open(dir + '/images/' + img[0] + '/' + img + '.jpg').save('images/' + img + '.jpg', 'JPEG', quality=100, subsampling=0)
 
 
-generate_moving()
 move_dir()

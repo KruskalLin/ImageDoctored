@@ -61,11 +61,12 @@ y_table = np.array(
                                         77], [24, 35, 55, 64, 81, 104, 113, 92],
      [49, 64, 78, 87, 103, 121, 120, 101], [72, 92, 95, 98, 112, 100, 103, 99]],
     dtype=np.float32).T
+y_table = torch.from_numpy(y_table)
 c_table = np.empty((8, 8), dtype=np.float32)
 c_table.fill(99)
 c_table[:4, :4] = np.array([[17, 18, 24, 47], [18, 21, 26, 66],
                             [24, 26, 56, 99], [47, 66, 99, 99]]).T
-
+c_table = torch.from_numpy(c_table)
 
 def y_quantize(image, rounding, factor=1):
     image = image / (y_table * factor)
@@ -153,7 +154,7 @@ def quality_to_factor(quality):
         return 2. - quality * 0.02
 
 
-def jpeg_compress_decompress(image, downsample_c=True, rounding=diff_round, factor=1.):
+def jpeg_compress_decompress(image, downsample_c=False, rounding=diff_round, factor=1.):
     b, c, h, w = image.size()
 
     orig_height, orig_width = h, w
@@ -220,5 +221,3 @@ def jpeg_compress_decompress(image, downsample_c=True, rounding=diff_round, fact
     #    image = 255 * (image - min_value) / value_range
     image = torch.min(torch.tensor(255.), torch.max(torch.tensor(0.), image))
     return image
-
-print(jpeg_compress_decompress(torch.ones((1, 3, 16, 16), dtype=torch.float32) * 255.))
