@@ -56,3 +56,19 @@ mkdir images
 python attack.py
 ```
 
+
+
+### attack ELA
+
+```shell
+mkdir patches
+cd patches
+mkdir authentic
+mkdir doctored
+mkdir attack
+```
+
+run `generate_patches` in 'patch_generator.py' then run 'train_ela.py' then run `repaint` in 'patch_generator.py'
+
+
+

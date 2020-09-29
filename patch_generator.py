@@ -52,4 +52,5 @@ def repaint(src, dst, conf):
 
 
 
-repaint('testing', 'patches', 'configs')
+generate_patches('testing', 'patches', 'configs')
+# repaint('testing', 'patches', 'configs')
